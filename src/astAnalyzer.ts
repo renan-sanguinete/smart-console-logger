@@ -96,6 +96,84 @@ function getParams(params: t.Function['params']): string[] {
   });
 }
 
+function isHookCallback(path: NodePath<t.Function>): boolean {
+  const parent = path.parentPath;
+  if (!parent?.isCallExpression()) { return false; }
+
+  const callee = parent.node.callee;
+  return t.isIdentifier(callee) && ['useMemo', 'useCallback'].includes(callee.name);
+}
+
+function getEnclosingCallName(path: NodePath<t.Function>): string | undefined {
+  const parent = path.parentPath;
+  if (!parent?.isCallExpression()) { return undefined; }
+
+  const callee = parent.node.callee;
+  if (t.isIdentifier(callee)) { return callee.name; }
+  if (t.isMemberExpression(callee) && t.isIdentifier(callee.property)) {
+    return callee.property.name;
+  }
+  return undefined;
+}
+
+function isReactComponentLike(path: NodePath<t.Function>): boolean {
+  const name = getFunctionName(path as NodePath);
+  if (!/^[A-Z]/.test(name)) { return false; }
+
+  const firstParam = path.node.params[0];
+  return t.isObjectPattern(firstParam);
+}
+
+function isInlineIfBranchReturn(path: NodePath<t.ReturnStatement>): boolean {
+  const parent = path.parentPath;
+  if (!parent?.isIfStatement()) { return false; }
+
+  const { consequent, alternate } = parent.node;
+  return consequent === path.node || alternate === path.node;
+}
+
+function isJsxPropCallback(path: NodePath<t.Function>): boolean {
+  const parent = path.parentPath;
+  const grandparent = parent?.parentPath;
+  return parent?.isJSXExpressionContainer() === true && grandparent?.isJSXAttribute() === true;
+}
+
+function isStateSetterCallback(path: NodePath<t.Function>): boolean {
+  const callName = getEnclosingCallName(path);
+  return callName ? /^set[A-Z]/.test(callName) : false;
+}
+
+function isArrayMethodCallback(path: NodePath<t.Function>): boolean {
+  const callName = getEnclosingCallName(path);
+  return callName
+    ? ['map', 'filter', 'find', 'reduce', 'forEach', 'some', 'every', 'sort', 'flatMap']
+      .includes(callName)
+    : false;
+}
+
+function isNoisyReactNativeHandlerName(name: string): boolean {
+  return [
+    /^(on|handle)Touch(Start|Move|End)?$/,
+    /^(on|handle)Drawing(Start|Update|End)$/,
+    /^(on|handle)Text(Box)?(Touch|Drag|Pinch|Interaction)/,
+    /^on(Text|Color|StrokeWidth)Change/,
+    /^handle(Color|TextEditColor)Change/,
+    /^handle(Pen|Text|Arrow)Toggle$/,
+    /^on(ClearContent|UndoEdit|ToggleInterfaceControls)$/,
+    /^onToolToggle$/,
+  ].some((pattern) => pattern.test(name));
+}
+
+function shouldSkipGeneralFunctionLogs(path: NodePath<t.Function>): boolean {
+  if (isHookCallback(path)) { return true; }
+  if (isJsxPropCallback(path)) { return true; }
+  if (isStateSetterCallback(path)) { return true; }
+  if (isArrayMethodCallback(path)) { return true; }
+
+  const name = getFunctionName(path as NodePath);
+  return isNoisyReactNativeHandlerName(name);
+}
+
 /** Zero-based line of the first statement inside a block body (or -1 if empty). */
 function firstLineOfBody(body: t.BlockStatement): number {
   if (body.body.length === 0) { return -1; }
@@ -139,12 +217,14 @@ export function analyzeCode(
   const handleFunction = (path: NodePath<t.Function>) => {
     const node = path.node;
     if (!t.isBlockStatement(node.body)) { return; } // expression body arrows handled below
+    if (shouldSkipGeneralFunctionLogs(path)) { return; }
 
     const name = getFunctionName(path as NodePath);
     const params = getParams(node.params);
     const isAsync = node.async;
+    const shouldLogFunctionStart = !isReactComponentLike(path);
 
-    if (config.logFunctionStart) {
+    if (config.logFunctionStart && shouldLogFunctionStart) {
       const line = firstLineOfBody(node.body);
       if (line >= 0) {
         addPoint({
@@ -162,6 +242,7 @@ export function analyzeCode(
         ReturnStatement(retPath) {
           // Skip returns inside nested functions
           if (retPath.getFunctionParent() !== path) { return; }
+          if (isInlineIfBranchReturn(retPath)) { return; }
           const loc = retPath.node.loc;
           if (!loc) { return; }
           const line = loc.start.line - 1;
@@ -185,22 +266,8 @@ export function analyzeCode(
     FunctionExpression: handleFunction,
     ArrowFunctionExpression(path) {
       const node = path.node;
-      const name = getFunctionName(path as NodePath);
-      const params = getParams(node.params);
-
       if (t.isBlockStatement(node.body)) {
         handleFunction(path as unknown as NodePath<t.Function>);
-      } else if (config.logReturn) {
-        // Expression body: () => value
-        const loc = node.body.loc;
-        if (loc) {
-          addPoint({
-            line: loc.start.line - 1,
-            label: `[arrow-return] ${name}`,
-            params,
-            type: 'function-return',
-          });
-        }
       }
     },
     ObjectMethod: handleFunction,
