@@ -2,24 +2,24 @@
 
 import { LoggerConfig, LogInsertPoint, LogPointType } from './types';
 
-// ─── Emoji map ────────────────────────────────────────────────────────────────
+// ─── Smart log labels ─────────────────────────────────────────────────────────
 
-const EMOJI: Record<LogPointType, string> = {
-  'function-start':   '🪵',
-  'function-return':  '🔙',
-  'try-start':        '🔵',
-  'catch-block':      '🔴',
-  'finally-block':    '🟡',
-  'then-callback':    '🟢',
-  'promise-catch':    '🟠',
-  'promise-finally':  '⚪',
-  'if-branch':        '↗️',
-  'else-branch':      '↘️',
+const SMART_LOG: Record<LogPointType, string> = {
+  'function-start':   '[SCL] [func-start]',
+  'function-return':  '[SCL] [func-return]',
+  'try-start':        '[SCL] [try]',
+  'catch-block':      '[SCL] [catch]',
+  'finally-block':    '[SCL] [finally]',
+  'then-callback':    '[SCL] [then]',
+  'promise-catch':    '[SCL] [promise-catch]',
+  'promise-finally':  '[SCL] [promise-finally]',
+  'if-branch':        '[SCL] [if]',
+  'else-branch':      '[SCL] [else]',
 };
 
 // ─── Marker used to identify smart-logger injected lines ─────────────────────
 
-export const SMART_LOG_MARKER = '🪵'; // present in every injected log
+export const SMART_LOG_MARKER = '[SCL]';
 
 // ─── Builder ─────────────────────────────────────────────────────────────────
 
@@ -28,9 +28,9 @@ export function buildConsoleLog(
   config: LoggerConfig,
   indent: string,
 ): string {
-  const emoji = config.emoji ? `${EMOJI[point.type]} ` : '';
+  const marker = `${SMART_LOG[point.type]} `;
   const timestamp = config.includeTimestamp ? `[${new Date().toISOString()}] ` : '';
-  const label = `${emoji}${timestamp}${point.label}`;
+  const label = `${marker}${timestamp}${point.label}`;
 
   const args: string[] = [`'${label}'`];
 
@@ -68,6 +68,8 @@ export function buildConsoleLog(
 
 /** Returns a regex that matches any line produced by this extension. */
 export function getSmartLogRegex(): RegExp {
-  // Matches lines that contain our emoji marker (simple or grouped variants)
-  return /^[ \t]*console\.(log|group|groupEnd|table)\(.*🪵.*\);?\s*$/;
+  const escapedMarker = SMART_LOG_MARKER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(
+    `^[ \\t]*console\\.(log|group|groupEnd|table)\\(.*${escapedMarker}.*\\);?\\s*$`,
+  );
 }

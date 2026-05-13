@@ -1,7 +1,6 @@
 // src/types.ts
 
 export interface LoggerConfig {
-  emoji: boolean;
   logStyle: 'simple' | 'grouped' | 'table';
   includeTimestamp: boolean;
   logFunctionStart: boolean;

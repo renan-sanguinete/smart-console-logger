@@ -66,11 +66,6 @@
     "configuration": {
       "title": "Smart Console Logger",
       "properties": {
-        "smartConsoleLogger.emoji": {
-          "type": "boolean",
-          "default": true,
-          "description": "Add emojis to console.log messages for better visibility"
-        },
         "smartConsoleLogger.logStyle": {
           "type": "string",
           "enum": ["simple", "grouped", "table"],

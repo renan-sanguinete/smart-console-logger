@@ -45,7 +45,7 @@ export async function insertConsoleLogs(
 
 /**
  * Removes all console.log lines that were injected by this extension
- * (identified by the smart-log marker emoji).
+ * (identified by the smart-log marker).
  */
 export async function removeConsoleLogs(
   editor: vscode.TextEditor,

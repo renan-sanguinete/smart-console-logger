@@ -4,6 +4,7 @@ import * as parser from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { LogInsertPoint, LoggerConfig } from './types';
+import { SMART_LOG_MARKER } from './logBuilder';
 
 // ─── Babel parse options ──────────────────────────────────────────────────────
 
@@ -105,7 +106,7 @@ function firstLineOfBody(body: t.BlockStatement): number {
 /** True if a line already contains a smart-logger console.log. */
 function isSmartLog(source: string, line: number): boolean {
   const lines = source.split('\n');
-  return lines[line]?.includes('🪵') || false;
+  return lines[line]?.includes(SMART_LOG_MARKER) || false;
 }
 
 // ─── Main Analyzer ────────────────────────────────────────────────────────────
