@@ -1,0 +1,133 @@
+{
+  "name": "smart-console-logger",
+  "displayName": "Smart Console Logger",
+  "description": "Automatically inject and remove strategic console.log statements in JS/TS/JSX/TSX files for React, React Native and Next.js",
+  "version": "1.0.1",
+  "publisher": "smart-console-logger",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Debuggers", "Other"],
+  "keywords": ["console.log", "debug", "react", "react native", "next.js", "typescript"],
+  "icon": "images/icon.png",
+  "activationEvents": [
+    "onLanguage:javascript",
+    "onLanguage:javascriptreact",
+    "onLanguage:typescript",
+    "onLanguage:typescriptreact"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "smartConsoleLogger.addLogs",
+        "title": "🪵 Add Smart Console Logs",
+        "category": "Smart Logger"
+      },
+      {
+        "command": "smartConsoleLogger.removeLogs",
+        "title": "🧹 Remove All Console Logs",
+        "category": "Smart Logger"
+      },
+      {
+        "command": "smartConsoleLogger.toggleLogs",
+        "title": "🔄 Toggle Console Logs",
+        "category": "Smart Logger"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "smartConsoleLogger.addLogs",
+        "key": "ctrl+shift+l",
+        "mac": "cmd+shift+l",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "smartConsoleLogger.removeLogs",
+        "key": "ctrl+shift+k",
+        "mac": "cmd+shift+k",
+        "when": "editorTextFocus"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "smartConsoleLogger.addLogs",
+          "group": "smartLogger@1",
+          "when": "editorTextFocus && resourceExtname =~ /\\.(js|ts|jsx|tsx|mjs|cjs)$/"
+        },
+        {
+          "command": "smartConsoleLogger.removeLogs",
+          "group": "smartLogger@2",
+          "when": "editorTextFocus && resourceExtname =~ /\\.(js|ts|jsx|tsx|mjs|cjs)$/"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Smart Console Logger",
+      "properties": {
+        "smartConsoleLogger.emoji": {
+          "type": "boolean",
+          "default": true,
+          "description": "Add emojis to console.log messages for better visibility"
+        },
+        "smartConsoleLogger.logStyle": {
+          "type": "string",
+          "enum": ["simple", "grouped", "table"],
+          "default": "simple",
+          "description": "Style of console output"
+        },
+        "smartConsoleLogger.includeTimestamp": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include timestamp in log messages"
+        },
+        "smartConsoleLogger.logFunctionStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Add console.log at the start of functions"
+        },
+        "smartConsoleLogger.logTryCatch": {
+          "type": "boolean",
+          "default": true,
+          "description": "Add console.log inside try/catch/finally blocks"
+        },
+        "smartConsoleLogger.logPromises": {
+          "type": "boolean",
+          "default": true,
+          "description": "Add console.log inside .then/.catch/.finally callbacks"
+        },
+        "smartConsoleLogger.logReturn": {
+          "type": "boolean",
+          "default": true,
+          "description": "Add console.log before return statements"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "typescript": "^5.3.0",
+    "@vscode/vsce": "^2.22.0"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.23.0",
+    "@babel/traverse": "^7.23.0",
+    "@babel/types": "^7.23.0",
+    "@babel/generator": "^7.23.0",
+    "@types/babel__traverse": "^7.20.0",
+    "@types/babel__generator": "^7.6.0"
+  }
+}
