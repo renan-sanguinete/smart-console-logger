@@ -1,12 +1,8 @@
-// src/astAnalyzer.ts
-
 import * as parser from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { LogInsertPoint, LoggerConfig } from './types';
 import { SMART_LOG_MARKER } from './logBuilder';
-
-// ─── Babel parse options ──────────────────────────────────────────────────────
 
 const PARSE_OPTIONS: parser.ParserOptions = {
   sourceType: 'module',
@@ -37,12 +33,9 @@ const PARSE_OPTIONS: parser.ParserOptions = {
   ],
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function getFunctionName(path: NodePath): string {
   const node = path.node;
 
-  // Named function declaration/expression
   if (
     (t.isFunctionDeclaration(node) || t.isFunctionExpression(node)) &&
     node.id?.name
@@ -50,20 +43,17 @@ function getFunctionName(path: NodePath): string {
     return node.id.name;
   }
 
-  // Arrow / expression assigned to variable: const foo = () => {}
   const parent = path.parent;
   if (t.isVariableDeclarator(parent) && t.isIdentifier(parent.id)) {
     return parent.id.name;
   }
 
-  // Object method / class method
   if (t.isObjectMethod(node) || t.isClassMethod(node)) {
     const key = (node as t.ObjectMethod | t.ClassMethod).key;
     if (t.isIdentifier(key)) { return key.name; }
     if (t.isStringLiteral(key)) { return key.value; }
   }
 
-  // Assignment: module.exports.foo = function() {}
   if (t.isAssignmentExpression(parent)) {
     const left = parent.left;
     if (t.isIdentifier(left)) { return left.name; }
@@ -72,7 +62,6 @@ function getFunctionName(path: NodePath): string {
     }
   }
 
-  // Class property (class field arrow)
   if (t.isClassProperty(parent) && t.isIdentifier(parent.key)) {
     return parent.key.name;
   }
@@ -174,27 +163,23 @@ function shouldSkipGeneralFunctionLogs(path: NodePath<t.Function>): boolean {
   return isNoisyReactNativeHandlerName(name);
 }
 
-/** Zero-based line of the first statement inside a block body (or -1 if empty). */
 function firstLineOfBody(body: t.BlockStatement): number {
   if (body.body.length === 0) { return -1; }
   const loc = body.body[0].loc;
   return loc ? loc.start.line - 1 : -1;
 }
 
-/** True if a line already contains a smart-logger console.log. */
 function isSmartLog(source: string, line: number): boolean {
   const lines = source.split('\n');
   return lines[line]?.includes(SMART_LOG_MARKER) || false;
 }
-
-// ─── Main Analyzer ────────────────────────────────────────────────────────────
 
 export function analyzeCode(
   source: string,
   config: LoggerConfig,
 ): LogInsertPoint[] {
   const points: LogInsertPoint[] = [];
-  const seen = new Set<number>(); // deduplicate by insertion line
+  const seen = new Set<number>();
 
   let ast: t.File;
   try {
@@ -207,16 +192,14 @@ export function analyzeCode(
   const addPoint = (pt: Omit<LogInsertPoint, 'column'>) => {
     if (pt.line < 0 || seen.has(pt.line) || isSmartLog(source, pt.line)) { return; }
     seen.add(pt.line);
-    // Determine indentation column from the source line
     const lineText = source.split('\n')[pt.line] ?? '';
     const column = lineText.length - lineText.trimStart().length;
     points.push({ ...pt, column });
   };
 
-  // Helper – shared function-body handler
   const handleFunction = (path: NodePath<t.Function>) => {
     const node = path.node;
-    if (!t.isBlockStatement(node.body)) { return; } // expression body arrows handled below
+    if (!t.isBlockStatement(node.body)) { return; }
     if (shouldSkipGeneralFunctionLogs(path)) { return; }
 
     const name = getFunctionName(path as NodePath);
@@ -237,10 +220,8 @@ export function analyzeCode(
     }
 
     if (config.logReturn) {
-      // Return statements inside the function
       path.traverse({
         ReturnStatement(retPath) {
-          // Skip returns inside nested functions
           if (retPath.getFunctionParent() !== path) { return; }
           if (isInlineIfBranchReturn(retPath)) { return; }
           const loc = retPath.node.loc;
@@ -261,7 +242,6 @@ export function analyzeCode(
   };
 
   traverse(ast, {
-    // ── Functions ──────────────────────────────────────────────────────────
     FunctionDeclaration: handleFunction,
     FunctionExpression: handleFunction,
     ArrowFunctionExpression(path) {
@@ -273,18 +253,15 @@ export function analyzeCode(
     ObjectMethod: handleFunction,
     ClassMethod: handleFunction,
 
-    // ── Try / Catch / Finally ──────────────────────────────────────────────
     TryStatement(path) {
       if (!config.logTryCatch) { return; }
       const node = path.node;
 
-      // try block
       const tryLine = firstLineOfBody(node.block);
       if (tryLine >= 0) {
         addPoint({ line: tryLine, label: '[try]', params: [], type: 'try-start' });
       }
 
-      // catch block
       if (node.handler) {
         const catchLine = firstLineOfBody(node.handler.body);
         const errParam =
@@ -296,7 +273,6 @@ export function analyzeCode(
         }
       }
 
-      // finally block
       if (node.finalizer) {
         const finallyLine = firstLineOfBody(node.finalizer);
         if (finallyLine >= 0) {
@@ -305,7 +281,6 @@ export function analyzeCode(
       }
     },
 
-    // ── Promise chains ─────────────────────────────────────────────────────
     CallExpression(path) {
       if (!config.logPromises) { return; }
       const node = path.node;
@@ -317,7 +292,6 @@ export function analyzeCode(
       const methodName = prop.name;
       if (!['then', 'catch', 'finally'].includes(methodName)) { return; }
 
-      // First argument should be a function (callback)
       const cb = node.arguments[0];
       if (!cb) { return; }
 
@@ -347,7 +321,6 @@ export function analyzeCode(
     },
   });
 
-  // Sort by line so edits from bottom-to-top don't shift lines
   points.sort((a, b) => a.line - b.line);
   return points;
 }

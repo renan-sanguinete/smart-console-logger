@@ -1,8 +1,4 @@
-// src/logBuilder.ts
-
 import { LoggerConfig, LogInsertPoint, LogPointType } from './types';
-
-// ─── Smart log labels ─────────────────────────────────────────────────────────
 
 const SMART_LOG: Record<LogPointType, string> = {
   'function-start':   '[SCL] [func-start]',
@@ -17,11 +13,7 @@ const SMART_LOG: Record<LogPointType, string> = {
   'else-branch':      '[SCL] [else]',
 };
 
-// ─── Marker used to identify smart-logger injected lines ─────────────────────
-
 export const SMART_LOG_MARKER = '[SCL]';
-
-// ─── Builder ─────────────────────────────────────────────────────────────────
 
 export function buildConsoleLog(
   point: LogInsertPoint,
@@ -35,7 +27,6 @@ export function buildConsoleLog(
   const args: string[] = [`'${label}'`];
 
   if (point.params.length > 0) {
-    // Log each param individually so DevTools shows the name + value
     const paramStr = `{ ${point.params.join(', ')} }`;
     args.push(paramStr);
   }
@@ -61,12 +52,11 @@ export function buildConsoleLog(
       }
       return `${indent}console.log('${label}');`;
 
-    default: // 'simple'
+    default:
       return `${indent}console.log(${args.join(', ')});`;
   }
 }
 
-/** Returns a regex that matches any line produced by this extension. */
 export function getSmartLogRegex(): RegExp {
   const escapedMarker = SMART_LOG_MARKER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp(

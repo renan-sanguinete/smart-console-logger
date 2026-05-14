@@ -1,5 +1,3 @@
-// src/types.ts
-
 export interface LoggerConfig {
   logStyle: 'simple' | 'grouped' | 'table';
   includeTimestamp: boolean;
@@ -10,10 +8,10 @@ export interface LoggerConfig {
 }
 
 export interface LogInsertPoint {
-  line: number;         // 0-based line index in the document
-  column: number;       // column for indentation reference
-  label: string;        // descriptive label for the log message
-  params: string[];     // variable names / params to log
+  line: number;
+  column: number;
+  label: string;
+  params: string[];
   type: LogPointType;
 }
 

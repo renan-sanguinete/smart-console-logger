@@ -1,11 +1,7 @@
-// src/extension.ts
-
 import * as vscode from 'vscode';
 import { analyzeCode } from './astAnalyzer';
 import { insertConsoleLogs, removeConsoleLogs, hasSmartLogs } from './editorManipulator';
 import { getConfig } from './configManager';
-
-// ─── Supported languages ──────────────────────────────────────────────────────
 
 const SUPPORTED_LANGUAGES = new Set([
   'javascript',
@@ -13,8 +9,6 @@ const SUPPORTED_LANGUAGES = new Set([
   'typescript',
   'typescriptreact',
 ]);
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getActiveEditor(): vscode.TextEditor | undefined {
   const editor = vscode.window.activeTextEditor;
@@ -31,8 +25,6 @@ function getActiveEditor(): vscode.TextEditor | undefined {
   }
   return editor;
 }
-
-// ─── Command: Add Logs ────────────────────────────────────────────────────────
 
 async function addLogs(): Promise<void> {
   const editor = getActiveEditor();
@@ -68,8 +60,6 @@ async function addLogs(): Promise<void> {
   );
 }
 
-// ─── Command: Remove Logs ─────────────────────────────────────────────────────
-
 async function removeLogs(): Promise<void> {
   const editor = getActiveEditor();
   if (!editor) { return; }
@@ -87,8 +77,6 @@ async function removeLogs(): Promise<void> {
   );
 }
 
-// ─── Command: Toggle Logs ─────────────────────────────────────────────────────
-
 async function toggleLogs(): Promise<void> {
   const editor = getActiveEditor();
   if (!editor) { return; }
@@ -100,12 +88,9 @@ async function toggleLogs(): Promise<void> {
   }
 }
 
-// ─── Activation ───────────────────────────────────────────────────────────────
-
 export function activate(context: vscode.ExtensionContext): void {
   console.log('🪵 Smart Console Logger is now active!');
 
-  // Register status bar item
   const statusBar = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Right,
     100,
@@ -114,7 +99,6 @@ export function activate(context: vscode.ExtensionContext): void {
   statusBar.tooltip = 'Toggle Smart Console Logs';
   context.subscriptions.push(statusBar);
 
-  // Update status bar on editor change
   const updateStatusBar = (editor: vscode.TextEditor | undefined) => {
     if (!editor || !SUPPORTED_LANGUAGES.has(editor.document.languageId)) {
       statusBar.hide();
@@ -139,7 +123,6 @@ export function activate(context: vscode.ExtensionContext): void {
 
   updateStatusBar(vscode.window.activeTextEditor);
 
-  // Register commands
   context.subscriptions.push(
     vscode.commands.registerCommand('smartConsoleLogger.addLogs', addLogs),
     vscode.commands.registerCommand('smartConsoleLogger.removeLogs', removeLogs),

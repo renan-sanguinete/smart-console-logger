@@ -1,5 +1,3 @@
-// src/configManager.ts
-
 import * as vscode from 'vscode';
 import { LoggerConfig } from './types';
 
