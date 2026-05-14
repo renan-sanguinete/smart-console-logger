@@ -1,7 +1,7 @@
 import * as parser from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { LogInsertPoint, LoggerConfig } from './types';
+import { LogInsertPoint, LoggerAggressiveness, LoggerConfig } from './types';
 import { SMART_LOG_MARKER } from './logBuilder';
 
 const PARSE_OPTIONS: parser.ParserOptions = {
@@ -153,11 +153,19 @@ function isNoisyReactNativeHandlerName(name: string): boolean {
   ].some((pattern) => pattern.test(name));
 }
 
-function shouldSkipGeneralFunctionLogs(path: NodePath<t.Function>): boolean {
+function shouldSkipGeneralFunctionLogs(
+  path: NodePath<t.Function>,
+  aggressiveness: LoggerAggressiveness,
+): boolean {
   if (isHookCallback(path)) { return true; }
+
+  if (aggressiveness === 'verbose') { return false; }
+
   if (isJsxPropCallback(path)) { return true; }
   if (isStateSetterCallback(path)) { return true; }
   if (isArrayMethodCallback(path)) { return true; }
+
+  if (aggressiveness === 'balanced') { return false; }
 
   const name = getFunctionName(path as NodePath);
   return isNoisyReactNativeHandlerName(name);
@@ -200,7 +208,7 @@ export function analyzeCode(
   const handleFunction = (path: NodePath<t.Function>) => {
     const node = path.node;
     if (!t.isBlockStatement(node.body)) { return; }
-    if (shouldSkipGeneralFunctionLogs(path)) { return; }
+    if (shouldSkipGeneralFunctionLogs(path, config.logAggressiveness)) { return; }
 
     const name = getFunctionName(path as NodePath);
     const params = getParams(node.params);

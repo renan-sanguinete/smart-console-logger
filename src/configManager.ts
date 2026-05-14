@@ -4,6 +4,10 @@ import { LoggerConfig } from './types';
 export function getConfig(): LoggerConfig {
   const cfg = vscode.workspace.getConfiguration('smartConsoleLogger');
   return {
+    logAggressiveness: cfg.get<'conservative' | 'balanced' | 'verbose'>(
+      'logAggressiveness',
+      'conservative',
+    ),
     logStyle:          cfg.get<'simple' | 'grouped' | 'table'>('logStyle', 'simple'),
     includeTimestamp:  cfg.get<boolean>('includeTimestamp', false),
     logFunctionStart:  cfg.get<boolean>('logFunctionStart', true),

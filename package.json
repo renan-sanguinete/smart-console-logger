@@ -2,7 +2,7 @@
   "name": "smart-console-logger",
   "displayName": "Smart Console Logger",
   "description": "Automatically inject and remove strategic console.log statements in JS/TS/JSX/TSX files for React, React Native and Next.js",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "publisher": "smart-console-logger",
   "engines": {
     "vscode": "^1.85.0"
@@ -71,6 +71,12 @@
           "enum": ["simple", "grouped", "table"],
           "default": "simple",
           "description": "Style of console output"
+        },
+        "smartConsoleLogger.logAggressiveness": {
+          "type": "string",
+          "enum": ["conservative", "balanced", "verbose"],
+          "default": "conservative",
+          "description": "Controls how aggressively logs are inserted. Conservative avoids noisy React/React Native callbacks, balanced is a middle ground, and verbose logs more block-based callbacks."
         },
         "smartConsoleLogger.includeTimestamp": {
           "type": "boolean",

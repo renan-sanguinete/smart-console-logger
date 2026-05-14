@@ -1,4 +1,7 @@
+export type LoggerAggressiveness = 'conservative' | 'balanced' | 'verbose';
+
 export interface LoggerConfig {
+  logAggressiveness: LoggerAggressiveness;
   logStyle: 'simple' | 'grouped' | 'table';
   includeTimestamp: boolean;
   logFunctionStart: boolean;
