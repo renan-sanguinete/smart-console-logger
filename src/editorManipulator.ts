@@ -2,6 +2,25 @@ import * as vscode from 'vscode';
 import { LogInsertPoint, LoggerConfig } from './types';
 import { buildConsoleLog, getSmartLogRegex } from './logBuilder';
 
+function withDisambiguatedLabels(points: LogInsertPoint[]): LogInsertPoint[] {
+  const counts = new Map<string, number>();
+
+  return [...points]
+    .sort((a, b) => a.line - b.line)
+    .map((point) => {
+      const key = `${point.type}::${point.label}`;
+      const count = (counts.get(key) ?? 0) + 1;
+      counts.set(key, count);
+
+      if (count === 1) { return point; }
+
+      return {
+        ...point,
+        label: `${point.label} ${count}`,
+      };
+    });
+}
+
 export async function insertConsoleLogs(
   editor: vscode.TextEditor,
   points: LogInsertPoint[],
@@ -10,7 +29,7 @@ export async function insertConsoleLogs(
   const doc = editor.document;
   let inserted = 0;
 
-  const sorted = [...points].sort((a, b) => b.line - a.line);
+  const sorted = withDisambiguatedLabels(points).sort((a, b) => b.line - a.line);
 
   await editor.edit((editBuilder) => {
     for (const point of sorted) {
